@@ -25,6 +25,10 @@ import ContactsUI
     var filteredContacts : [EVContactProtocol]? = nil
     var barButton : UIBarButtonItem? = nil
     var useExternal : Bool = false
+    var keysToFetch = [
+        CNContactFormatter.descriptorForRequiredKeys(for: .fullName) as CNKeyDescriptor,
+        CNContactPhoneNumbersKey as CNKeyDescriptor]
+    
     public var maxSelectedContacts : Int = -1 {
         didSet {
             singleSelection = maxSelectedContacts == 1;
@@ -205,39 +209,20 @@ import ContactsUI
         self.contacts = []
         var mutableContacts : [EVContact] = []
         
-        let req : CNContactFetchRequest = CNContactFetchRequest(keysToFetch: [CNContactEmailAddressesKey as CNKeyDescriptor,CNContactGivenNameKey as CNKeyDescriptor,CNContactFamilyNameKey as CNKeyDescriptor,CNContactImageDataAvailableKey as CNKeyDescriptor,CNContactThumbnailImageDataKey as CNKeyDescriptor,CNContactImageDataKey as CNKeyDescriptor,CNContactPhoneNumbersKey as CNKeyDescriptor])
+        let req : CNContactFetchRequest = CNContactFetchRequest(keysToFetch: keysToFetch)
         
         do {
             try self.store?.enumerateContacts(with: req, usingBlock: { (contact: CNContact, boolprop : UnsafeMutablePointer<ObjCBool> ) -> Void in
                 
-                var tmpContact = EVContact(identifier: contact.identifier)
-                tmpContact.firstName = contact.givenName
-                tmpContact.lastName = contact.familyName
-                if (contact.phoneNumbers.count > 0) {
-                    tmpContact.phone = (contact.phoneNumbers[0].value ).stringValue
-
-                }
-                if (contact.emailAddresses.count > 0) {
-                    tmpContact.email = (contact.emailAddresses[0].value as String)
-                }
-                
-                if(contact.imageDataAvailable) {
-                    if let imgData = contact.imageData {
-                        let img = UIImage(data: imgData)
-                        tmpContact.image = img
-                    } else {
-                        tmpContact.image = self.avatarImage
+                contact.phoneNumbers.forEach() {
+                    var tmpContact = EVContact(identifier: contact.identifier)
+                    tmpContact.firstName = CNContactFormatter.string(from: contact, style: .fullName)
+                    tmpContact.phone = $0.value.stringValue
+                    if let phoneDigits = $0.value.value(forKey: "digits") as? String {
+                        tmpContact.phoneDigits = phoneDigits
                     }
-                } else {
-                    tmpContact.image = self.avatarImage
-                }
-                
-                let showContact = self.delegate?.shouldShowContact(tmpContact)
-                
-                if showContact == nil || showContact == true {
                     mutableContacts.append(tmpContact)
                 }
-                
                 self.contacts = mutableContacts
                 self.selectedContacts = []
                 self.filteredContacts = self.contacts
@@ -262,7 +247,7 @@ import ContactsUI
     func refreshContact(_ contact: EVContactProtocol) {
         if( self.useExternal == false ) {
             do {
-                if let tmpContact = try self.store?.unifiedContact(withIdentifier: contact.identifier, keysToFetch: [CNContactEmailAddressesKey as CNKeyDescriptor,CNContactGivenNameKey as CNKeyDescriptor,CNContactFamilyNameKey as CNKeyDescriptor,CNContactImageDataAvailableKey as CNKeyDescriptor,CNContactThumbnailImageDataKey as CNKeyDescriptor,CNContactImageDataKey as CNKeyDescriptor,CNContactPhoneNumbersKey as CNKeyDescriptor]) {
+                if let tmpContact = try self.store?.unifiedContact(withIdentifier: contact.identifier, keysToFetch: keysToFetch) {
                     var mutableContact = contact
                     mutableContact.identifier = tmpContact.identifier
                     mutableContact.firstName = tmpContact.givenName
@@ -314,7 +299,7 @@ import ContactsUI
     }
     
     open func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 70
+        return 45
     }
     
     open func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -400,7 +385,7 @@ import ContactsUI
                     self.contactPickerView?.removeAllContacts();
                 }
                 self.selectedContacts?.append(user)
-                if let fullname = user.fullname() {
+                if let fullname = user.fullNameAndPhone() {
                     self.contactPickerView?.addContact(user, name: fullname)
                     cell.checkImage?.image = self.selectedCheckbox
                 }
@@ -439,17 +424,17 @@ import ContactsUI
             
             self.filteredContacts = contacts.filter({ (contact) -> Bool in
                 var filterResultFirst : Bool = true
-                var filterResultLast : Bool = true
-
+                var filterResultPhoneDigit : Bool = true
+                
                 if let firstName = contact.firstName {
                     filterResultFirst = filterResultFirst && doesContain(str1: firstName, str2: textViewText)
                 }
                 
-                if let lastName = contact.lastName {
-                    filterResultLast = filterResultLast && doesContain(str1: lastName, str2: textViewText)
+                if let phoneDigits = contact.phoneDigits {
+                    filterResultPhoneDigit = filterResultPhoneDigit && doesContain(str1: phoneDigits, str2: textViewText)
                 }
                 
-                return filterResultFirst || filterResultLast
+                return filterResultFirst || filterResultPhoneDigit
             })
         }
         

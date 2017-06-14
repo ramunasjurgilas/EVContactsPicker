@@ -1,5 +1,5 @@
 PODS:
-  - EVContactsPicker (0.5.9):
+  - EVContactsPicker (0.5.12):
     - Nuke (~> 4.1.2)
   - Nimble (5.1.1)
   - Nuke (4.1.2)
@@ -12,10 +12,10 @@ DEPENDENCIES:
 
 EXTERNAL SOURCES:
   EVContactsPicker:
-    :path: "../"
+    :path: ../
 
 SPEC CHECKSUMS:
-  EVContactsPicker: 7ce47cf0df5706d9e1b6a73c3b0b3c0e26ecf607
+  EVContactsPicker: 3a10c6a6980d539a6418ca152c6e75e816145f20
   Nimble: 415e3aa3267e7bc2c96b05fa814ddea7bb686a29
   Nuke: 7cfd2acdf90c36f66e6ea40795bac0d851a9afe0
   Quick: dafc587e21eed9f4cab3249b9f9015b0b7a7f71d
